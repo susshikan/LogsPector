@@ -49,9 +49,9 @@ export async function analyzeSeo(url: string) {
       title,
       metaDescription,
       h1Count: h1Tags.length,
-      h1Tags: h1Tags.slice(0, 5), 
+      h1Tags: h1Tags.slice(0, 5),
       h2Count: h2Tags.length,
-      h2Tags: h2Tags.slice(0, 5), 
+      h2Tags: h2Tags.slice(0, 5),
       imgCount: imgTags.length,
       imagesWithoutAlt: imgTags.filter((img) => !img.alt).length,
       wordCount: countWords(stripHtml(html)),
@@ -66,89 +66,90 @@ export async function analyzeSeo(url: string) {
       hasHttps: url.startsWith("https://"),
     };
 
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an SEO expert assistant. Analyze the website data and provide SEO recommendations.",
-            },
+          contents: [
             {
               role: "user",
-              content: `
-              Analyze this website's SEO data and provide a assessment with scores, issues, and recommendations:
-              ${JSON.stringify(seoData, null, 2)}
-              
-              Return only a JSON object with the following structure:
-              {
-                "metaTagsScore": number (0-100),
-                "contentScore": number (0-100),
-                "performanceScore": number (0-100),
-                "mobileScore": number (0-100),
-                "issues": [
-                  {
-                    "title": string,
-                    "description": string,
-                    "severity": "high" | "medium" | "low"
-                  }
-                ],
-                "recommendations": [
-                  {
-                    "title": string,
-                    "description": string,
-                    "impact": "high" | "medium" | "low"
-                  }
-                ],
-                "metaTagsDetails": [
-                  {
-                    "name": string,
-                    "value": string,
-                    "status": "good" | "warning" | "bad"
-                  }
-                ],
-                "contentDetails": [
-                  {
-                    "name": string,
-                    "value": string,
-                    "status": "good" | "warning" | "bad"
-                  }
-                ],
-                "technicalDetails": [
-                  {
-                    "name": string,
-                    "value": string,
-                    "status": "good" | "warning" | "bad"
-                  }
-                ]
-              }
-              
-              Provide detailed, actionable recommendations. Be specific about what needs to be improved and how.
-            `,
-            },
-          ],
-          max_tokens: 2000,
-        }),
-      }
-    );
+              parts: [
+                {
+                  text: `
+          You are an SEO expert assistant.
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+          Analyze this website's SEO data and provide an assessment with scores, issues, and recommendations:
+
+          ${JSON.stringify(seoData, null, 2)}
+
+          Return ONLY a JSON object with the following structure:
+
+          {
+            "metaTagsScore": number (0-100),
+            "contentScore": number (0-100),
+            "performanceScore": number (0-100),
+            "mobileScore": number (0-100),
+            "issues": [
+              {
+                "title": string,
+                "description": string,
+                "severity": "high" | "medium" | "low"
+              }
+            ],
+            "recommendations": [
+              {
+                "title": string,
+                "description": string,
+                "impact": "high" | "medium" | "low"
+              }
+            ],
+            "metaTagsDetails": [
+              {
+                "name": string,
+                "value": string,
+                "status": "good" | "warning" | "bad"
+              }
+            ],
+            "contentDetails": [
+              {
+                "name": string,
+                "value": string,
+                "status": "good" | "warning" | "bad"
+              }
+            ],
+            "technicalDetails": [
+              {
+                "name": string,
+                "value": string,
+                "status": "good" | "warning" | "bad"
+              }
+            ]
+          }
+
+          Provide detailed, actionable recommendations.
+          `
+                          }
+                        ]
+                      }
+                    ]
+                  })
+                }
+              );
+
+    if (!geminiResponse.ok) {
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    let content = openaiData.choices[0].message.content.trim();
+    const geminiData = await geminiResponse.json();
+    let content = geminiData.candidates[0].content.parts[0].text.trim();
+
 
     if (content.startsWith("```json")) {
-      content = content.slice(7, -3).trim(); 
+      content = content.slice(7, -3).trim();
     }
     console.log(content);
     const analysisResult = JSON.parse(content);
@@ -164,9 +165,8 @@ export async function analyzeSeo(url: string) {
       issues: [
         {
           title: "Error analyzing website",
-          description: `We encountered an error while analyzing this website: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`,
+          description: `We encountered an error while analyzing this website: ${error instanceof Error ? error.message : "Unknown error"
+            }`,
           severity: "high",
         },
       ],
