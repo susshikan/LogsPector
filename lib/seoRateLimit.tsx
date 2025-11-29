@@ -22,3 +22,14 @@ export async function checkSeoLimit(ip: string) {
 
   return { allowed: true, remaining: DAILY_LIMIT - (current + 1) };
 }
+
+export async function getSeoUsage(ip: string) {
+  const key = todayKey(ip);
+  const used = (await kv.get<number>(key)) || 0;
+
+  return {
+    used,
+    limit: DAILY_LIMIT,
+    remaining: DAILY_LIMIT - used
+  };
+}
