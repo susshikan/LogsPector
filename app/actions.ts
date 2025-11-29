@@ -147,9 +147,8 @@ export async function analyzeSeo(url: string) {
     const openaiData = await openaiResponse.json();
     let content = openaiData.choices[0].message.content.trim();
 
-    // Remove potential Markdown code block
     if (content.startsWith("```json")) {
-      content = content.slice(7, -3).trim(); // Remove ```json and ```
+      content = content.slice(7, -3).trim(); 
     }
     console.log(content);
     const analysisResult = JSON.parse(content);
@@ -157,8 +156,6 @@ export async function analyzeSeo(url: string) {
     return analysisResult;
   } catch (error) {
     console.error("Error analyzing SEO:", error);
-
-    // Return a fallback response with error information
     return {
       metaTagsScore: 0,
       contentScore: 0,
