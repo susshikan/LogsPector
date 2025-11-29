@@ -128,8 +128,18 @@ Provide detailed, actionable recommendations.
 `;
 
     const geminiResponse = await ai.models.generateContent({
-      model: "gemini-pro",
-      contents: prompt,
+      model: "gemini-1.5-flash-001",
+      // KOREKSI 1: Gunakan format standar 'parts' agar tidak error
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }] 
+        }
+      ],
+      // Opsional: Paksa output JSON (fitur baru 1.5 Flash)
+      config: {
+        responseMimeType: "application/json",
+      }
     });
 
     let content = (geminiResponse.text ?? "").trim();
