@@ -20,6 +20,8 @@ export async function checkSeoLimit(ip: string) {
         ex: 60 * 60 * 24,
     });
 
+    console.log("NEW LIMIT:", current + 1);
+
     return { allowed: true, remaining: DAILY_LIMIT - (current + 1) };
 }
 

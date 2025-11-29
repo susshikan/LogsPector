@@ -3,6 +3,9 @@ import { SeoResults } from "@/components/seo-results";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
+import { headers } from "next/headers";
+import { checkSeoLimit } from "@/lib/seoRateLimit";
+
 type Props = {
   searchParams: Promise<{ url?: string }>;
 };
@@ -10,6 +13,29 @@ type Props = {
 export default async function ResultsPage({ searchParams }: Props) {
   const params = await searchParams;
   const url = params.url || "";
+  const h = headers();
+  const ip =
+    (await h).get("x-forwarded-for")?.split(",")[0] ||
+    (await h).get("x-real-ip") ||
+    "unknown";
+
+  const rate = await checkSeoLimit(ip);
+
+  if (!rate.allowed) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#FFDE59]">
+        <div className="neo-card bg-white p-8 text-center">
+          <p className="text-xl font-bold text-[#FF5757]">
+            Daily limit reached (3 per day).
+          </p>
+          <p className="mt-4">Please try again tomorrow.</p>
+          <Link href="/">
+            <button className="neo-button mt-6">Go Back</button>
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#FFDE59]">

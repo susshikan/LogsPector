@@ -3,15 +3,16 @@ import { NextResponse } from "next/server";
 import { getSeoUsage } from "@/lib/seoRateLimit";
 
 export async function GET() {
-  const h = headers();
+    const h = headers();
 
-  const ip =
-    (await h).get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    (await h).get("x-real-ip") ||
-    (await h).get("cf-connecting-ip") ||
-    "unknown";
+    const ip =
+        (await h).get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        (await h).get("x-real-ip") ||
+        (await h).get("cf-connecting-ip") ||
+        "unknown";
+    console.log(ip)
 
-  const usage = await getSeoUsage(ip);
+    const usage = await getSeoUsage(ip);
 
-  return NextResponse.json(usage);
+    return NextResponse.json(usage);
 }
