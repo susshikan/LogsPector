@@ -1,11 +1,19 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { GoogleGenAI } from "@google/genai"; 
+// Menggunakan SDK standar Google Generative AI
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// Inisialisasi Client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+// Inisialisasi Model di luar fungsi agar lebih efisien (reuse instance)
+// Menggunakan 'gemini-1.5-flash' yang cepat dan mendukung JSON mode
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash-001",
+  generationConfig: {
+    responseMimeType: "application/json", // Memaksa output JSON
+  },
 });
 
 export async function submitUrl(data: any, formData: FormData) {
@@ -50,6 +58,7 @@ export async function analyzeSeo(url: string) {
     const h1Tags = extractAllTags(html, "h1");
     const h2Tags = extractAllTags(html, "h2");
     const imgTags = extractAllImgTags(html);
+    
     const seoData = {
       url,
       title,
@@ -72,85 +81,75 @@ export async function analyzeSeo(url: string) {
       hasHttps: url.startsWith("https://"),
     };
 
-
     const prompt = `
-You are an SEO expert assistant.
+    You are an SEO expert assistant.
 
-Analyze this website's SEO data and provide an assessment with scores, issues, and recommendations:
+    Analyze this website's SEO data and provide an assessment with scores, issues, and recommendations:
 
-${JSON.stringify(seoData, null, 2)}
+    ${JSON.stringify(seoData, null, 2)}
 
-Return ONLY a JSON object with the following structure:
+    Return ONLY a JSON object with the following structure:
 
-{
-  "metaTagsScore": number (0-100),
-  "contentScore": number (0-100),
-  "performanceScore": number (0-100),
-  "mobileScore": number (0-100),
-  "issues": [
     {
-      "title": string,
-      "description": string,
-      "severity": "high" | "medium" | "low"
-    }
-  ],
-  "recommendations": [
-    {
-      "title": string,
-      "description": string,
-      "impact": "high" | "medium" | "low"
-    }
-  ],
-  "metaTagsDetails": [
-    {
-      "name": string,
-      "value": string,
-      "status": "good" | "warning" | "bad"
-    }
-  ],
-  "contentDetails": [
-    {
-      "name": string,
-      "value": string,
-      "status": "good" | "warning" | "bad"
-    }
-  ],
-  "technicalDetails": [
-    {
-      "name": string,
-      "value": string,
-      "status": "good" | "warning" | "bad"
-    }
-  ]
-}
-
-Provide detailed, actionable recommendations.
-`;
-
-    const geminiResponse = await ai.models.generateContent({
-      model: "gemini-1.5-flash-001",
-      // KOREKSI 1: Gunakan format standar 'parts' agar tidak error
-      contents: [
+      "metaTagsScore": number (0-100),
+      "contentScore": number (0-100),
+      "performanceScore": number (0-100),
+      "mobileScore": number (0-100),
+      "issues": [
         {
-          role: "user",
-          parts: [{ text: prompt }] 
+          "title": string,
+          "description": string,
+          "severity": "high" | "medium" | "low"
         }
       ],
-      // Opsional: Paksa output JSON (fitur baru 1.5 Flash)
-      config: {
-        responseMimeType: "application/json",
-      }
-    });
-
-    let content = (geminiResponse.text ?? "").trim();
-
-    if (content.startsWith("```json")) {
-      content = content.slice(7, -3).trim();
+      "recommendations": [
+        {
+          "title": string,
+          "description": string,
+          "impact": "high" | "medium" | "low"
+        }
+      ],
+      "metaTagsDetails": [
+        {
+          "name": string,
+          "value": string,
+          "status": "good" | "warning" | "bad"
+        }
+      ],
+      "contentDetails": [
+        {
+          "name": string,
+          "value": string,
+          "status": "good" | "warning" | "bad"
+        }
+      ],
+      "technicalDetails": [
+        {
+          "name": string,
+          "value": string,
+          "status": "good" | "warning" | "bad"
+        }
+      ]
     }
-    console.log(content);
+
+    Provide detailed, actionable recommendations.
+    `;
+
+    // --- LOGIKA BARU MENGGUNAKAN @google/generative-ai ---
+    
+    const result = await model.generateContent(prompt);
+    const aiResponse = await result.response;
+    let content = aiResponse.text();
+
+    // Membersihkan format markdown jika AI menambahkannya (misal: ```json ... ```)
+    content = content.replace(/```json|```/g, "").trim();
+    
+    console.log("AI Response:", content); // Debugging
+    
     const analysisResult = JSON.parse(content);
 
     return analysisResult;
+
   } catch (error) {
     console.error("Error analyzing SEO:", error);
     return {
@@ -181,6 +180,8 @@ Provide detailed, actionable recommendations.
     };
   }
 }
+
+// --- FUNGSI HELPER TETAP SAMA ---
 
 function extractTag(html: string, tag: string): string {
   const regex = new RegExp(`<${tag}[^>]*>(.*?)<\/${tag}>`, "i");
