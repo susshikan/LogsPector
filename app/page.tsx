@@ -1,4 +1,5 @@
 import { SeoForm } from "@/components/seo-form";
+import { SeoUsage } from "@/components/seo-usage";
 
 export default function Home() {
   return (
@@ -14,6 +15,9 @@ export default function Home() {
         </div>
 
         <SeoForm />
+
+        {/* ✅ USAGE INFO DI SINI */}
+        <SeoUsage />
       </div>
     </main>
   );

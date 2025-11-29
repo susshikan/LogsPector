@@ -19,12 +19,9 @@ export function SeoUsage() {
   if (!data) return null;
 
   return (
-    <div className="mt-6 bg-white neo-card text-center">
+    <div className="mt-8 text-center">
       <p className="font-bold text-gray-700">
         Usage today: {data.used} / {data.limit}
-      </p>
-      <p className="text-sm">
-        Remaining today: <b>{data.remaining}</b>
       </p>
     </div>
   );
