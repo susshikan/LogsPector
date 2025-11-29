@@ -1,18 +1,13 @@
 "use server";
-
 import { redirect } from "next/navigation";
-// Menggunakan SDK standar Google Generative AI
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Inisialisasi Client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-// Inisialisasi Model di luar fungsi agar lebih efisien (reuse instance)
-// Menggunakan 'gemini-1.5-flash' yang cepat dan mendukung JSON mode
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash-001",
+  model: "gemini-2.5-flash",
   generationConfig: {
-    responseMimeType: "application/json", // Memaksa output JSON
+    responseMimeType: "application/json",
   },
 });
 
@@ -135,13 +130,13 @@ export async function analyzeSeo(url: string) {
     Provide detailed, actionable recommendations.
     `;
 
-    // --- LOGIKA BARU MENGGUNAKAN @google/generative-ai ---
+    // --- LOGIKA UTAMA ---
     
     const result = await model.generateContent(prompt);
     const aiResponse = await result.response;
     let content = aiResponse.text();
 
-    // Membersihkan format markdown jika AI menambahkannya (misal: ```json ... ```)
+    // Membersihkan format markdown jika AI menambahkannya
     content = content.replace(/```json|```/g, "").trim();
     
     console.log("AI Response:", content); // Debugging
@@ -181,7 +176,7 @@ export async function analyzeSeo(url: string) {
   }
 }
 
-// --- FUNGSI HELPER TETAP SAMA ---
+// --- FUNGSI HELPER ---
 
 function extractTag(html: string, tag: string): string {
   const regex = new RegExp(`<${tag}[^>]*>(.*?)<\/${tag}>`, "i");
