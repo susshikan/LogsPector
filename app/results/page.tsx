@@ -3,12 +3,13 @@ import { SeoResults } from "@/components/seo-results";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
-export default async function ResultsPage({
-  searchParams,
-}: {
-  searchParams: { url?: string };
-}) {
-  const url = (await searchParams).url || "";
+type Props = {
+  searchParams: Promise<{ url?: string }>;
+};
+
+export default async function ResultsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const url = params.url || "";
 
   return (
     <main className="min-h-screen p-4 md:p-8 bg-[#FFDE59]">
