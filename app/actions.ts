@@ -130,16 +130,15 @@ export async function analyzeSeo(url: string) {
     Provide detailed, actionable recommendations.
     `;
 
-    // --- LOGIKA UTAMA ---
-    
+   
     const result = await model.generateContent(prompt);
     const aiResponse = await result.response;
     let content = aiResponse.text();
 
-    // Membersihkan format markdown jika AI menambahkannya
+    
     content = content.replace(/```json|```/g, "").trim();
     
-    console.log("AI Response:", content); // Debugging
+    console.log("AI Response:", content); 
     
     const analysisResult = JSON.parse(content);
 
