@@ -15,11 +15,9 @@ export async function submitUrl(data: any, formData: FormData) {
   }
 
   try {
-    // Validate URL
     new URL(formattedUrl);
 
     console.log(formattedUrl);
-    // Redirect to results page
     redirect(`/results?url=${encodeURIComponent(formattedUrl)}`);
   } catch (err) {
     console.log(err);
@@ -29,7 +27,6 @@ export async function submitUrl(data: any, formData: FormData) {
 
 export async function analyzeSeo(url: string) {
   try {
-    // Fetch the website content
     const response = await fetch(url, {
       headers: {
         "User-Agent": "SEO-Inspector-Bot/1.0",
@@ -42,22 +39,19 @@ export async function analyzeSeo(url: string) {
 
     const html = await response.text();
 
-    // Extract basic SEO elements
     const title = extractTag(html, "title");
     const metaDescription = extractMetaTag(html, "description");
     const h1Tags = extractAllTags(html, "h1");
     const h2Tags = extractAllTags(html, "h2");
     const imgTags = extractAllImgTags(html);
-
-    // Prepare data for AI analysis
     const seoData = {
       url,
       title,
       metaDescription,
       h1Count: h1Tags.length,
-      h1Tags: h1Tags.slice(0, 5), // Limit to first 5 for brevity
+      h1Tags: h1Tags.slice(0, 5), 
       h2Count: h2Tags.length,
-      h2Tags: h2Tags.slice(0, 5), // Limit to first 5 for brevity
+      h2Tags: h2Tags.slice(0, 5), 
       imgCount: imgTags.length,
       imagesWithoutAlt: imgTags.filter((img) => !img.alt).length,
       wordCount: countWords(stripHtml(html)),
