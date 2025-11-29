@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.2.2",
+    "@google/genai": "^1.30.0",
     "@headlessui/react": "^2.2.0",
     "@radix-ui/react-progress": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",

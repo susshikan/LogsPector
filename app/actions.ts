@@ -1,6 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { GoogleGenAI } from "@google/genai"; 
+
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 export async function submitUrl(data: any, formData: FormData) {
   const url = formData.get("url") as string;
@@ -66,87 +72,67 @@ export async function analyzeSeo(url: string) {
       hasHttps: url.startsWith("https://"),
     };
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `
-          You are an SEO expert assistant.
 
-          Analyze this website's SEO data and provide an assessment with scores, issues, and recommendations:
+    const prompt = `
+You are an SEO expert assistant.
 
-          ${JSON.stringify(seoData, null, 2)}
+Analyze this website's SEO data and provide an assessment with scores, issues, and recommendations:
 
-          Return ONLY a JSON object with the following structure:
+${JSON.stringify(seoData, null, 2)}
 
-          {
-            "metaTagsScore": number (0-100),
-            "contentScore": number (0-100),
-            "performanceScore": number (0-100),
-            "mobileScore": number (0-100),
-            "issues": [
-              {
-                "title": string,
-                "description": string,
-                "severity": "high" | "medium" | "low"
-              }
-            ],
-            "recommendations": [
-              {
-                "title": string,
-                "description": string,
-                "impact": "high" | "medium" | "low"
-              }
-            ],
-            "metaTagsDetails": [
-              {
-                "name": string,
-                "value": string,
-                "status": "good" | "warning" | "bad"
-              }
-            ],
-            "contentDetails": [
-              {
-                "name": string,
-                "value": string,
-                "status": "good" | "warning" | "bad"
-              }
-            ],
-            "technicalDetails": [
-              {
-                "name": string,
-                "value": string,
-                "status": "good" | "warning" | "bad"
-              }
-            ]
-          }
+Return ONLY a JSON object with the following structure:
 
-          Provide detailed, actionable recommendations.
-          `
-                          }
-                        ]
-                      }
-                    ]
-                  })
-                }
-              );
-
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+{
+  "metaTagsScore": number (0-100),
+  "contentScore": number (0-100),
+  "performanceScore": number (0-100),
+  "mobileScore": number (0-100),
+  "issues": [
+    {
+      "title": string,
+      "description": string,
+      "severity": "high" | "medium" | "low"
     }
+  ],
+  "recommendations": [
+    {
+      "title": string,
+      "description": string,
+      "impact": "high" | "medium" | "low"
+    }
+  ],
+  "metaTagsDetails": [
+    {
+      "name": string,
+      "value": string,
+      "status": "good" | "warning" | "bad"
+    }
+  ],
+  "contentDetails": [
+    {
+      "name": string,
+      "value": string,
+      "status": "good" | "warning" | "bad"
+    }
+  ],
+  "technicalDetails": [
+    {
+      "name": string,
+      "value": string,
+      "status": "good" | "warning" | "bad"
+    }
+  ]
+}
 
-    const geminiData = await geminiResponse.json();
-    let content = geminiData.candidates[0].content.parts[0].text.trim();
+Provide detailed, actionable recommendations.
+`;
 
+    const geminiResponse = await ai.models.generateContent({
+      model: "gemini-pro",
+      contents: prompt,
+    });
+
+    let content = (geminiResponse.text ?? "").trim();
 
     if (content.startsWith("```json")) {
       content = content.slice(7, -3).trim();
@@ -165,8 +151,9 @@ export async function analyzeSeo(url: string) {
       issues: [
         {
           title: "Error analyzing website",
-          description: `We encountered an error while analyzing this website: ${error instanceof Error ? error.message : "Unknown error"
-            }`,
+          description: `We encountered an error while analyzing this website: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
           severity: "high",
         },
       ],
@@ -185,7 +172,6 @@ export async function analyzeSeo(url: string) {
   }
 }
 
-// Helper functions to extract data from HTML
 function extractTag(html: string, tag: string): string {
   const regex = new RegExp(`<${tag}[^>]*>(.*?)<\/${tag}>`, "i");
   const match = html.match(regex);
